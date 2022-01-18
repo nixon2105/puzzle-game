@@ -14,6 +14,42 @@ let playField = [],
   coords = [],
   finalstate = [];
 
+cvs.addEventListener('mousemove', (e) => {
+  const clientX = e.offsetX;
+  const clientY = e.offsetY;
+
+  if (stillOnHovered(clientX, clientY)) {
+    return;
+  }
+
+  hoveredItem = getHoveredItem(clientX, clientY);
+});
+
+cvs.addEventListener('mouseout', (_) => {
+  hoveredItem = null;
+});
+
+function getHoveredItem(clientX, clientY) {
+  return coords.find((c) => {
+    return (
+      clientX > c.x &&
+      clientX < c.x + CELL_SIZE &&
+      clientY > c.y &&
+      clientY < c.y + CELL_SIZE
+    );
+  });
+}
+
+function stillOnHovered(clientX, clientY) {
+  return (
+    hoveredItem &&
+    clientX > hoveredItem.x &&
+    clientX < hoveredItem.x + CELL_SIZE &&
+    clientY > hoveredItem.y &&
+    clientY < hoveredItem.y + CELL_SIZE
+  );
+}
+
 function loadImages(path) {
   return new Promise((resolve, reject) => {
     const img = new Image();
