@@ -8,7 +8,8 @@ let bgImage = null,
   retryIcon = null,
   moveAudio = null,
   gameOver = false,
-  hoveredItem = null;
+  hoveredItem = null,
+  retryBtnCoords = {};
 
 let playField = [],
   coords = [],
@@ -29,6 +30,68 @@ cvs.addEventListener('mouseout', (_) => {
   hoveredItem = null;
 });
 
+cvs.addEventListener('click', (e) => {
+  const clientX = e.offsetX;
+  const clientY = e.offsetY;
+
+  if (gameOver) {
+    if (
+      clientX > retryBtnCoords.x &&
+      clientX < retryBtnCoords.x + 150 &&
+      clientY > retryBtnCoords.y &&
+      clientY < retryBtnCoords.y + 150
+    ) {
+      gameOver = false;
+      moves = 0;
+      time = 0;
+      hoveredItem = null;
+
+      moveAudio.play();
+
+      playField = [];
+      coords = [];
+      gameWinResult = [];
+
+      initPlayField();
+    }
+    return;
+  }
+
+  moveAudio.play();
+
+  if (stillOnHovered(clientX, clientY)) {
+    const emptyCell =
+      (playField[hoveredItem.row]?.[hoveredItem.col + 1] === 0 && {
+        row: hoveredItem.row,
+        col: hoveredItem.col + 1,
+      }) ||
+      (playField[hoveredItem.row]?.[hoveredItem.col - 1] === 0 && {
+        row: hoveredItem.row,
+        col: hoveredItem.col - 1,
+      }) ||
+      (playField[hoveredItem.row - 1]?.[hoveredItem.col] === 0 && {
+        row: hoveredItem.row - 1,
+        col: hoveredItem.col,
+      }) ||
+      (playField[hoveredItem.row + 1]?.[hoveredItem.col] === 0 && {
+        row: hoveredItem.row + 1,
+        col: hoveredItem.col,
+      });
+
+    if (emptyCell) {
+      const currentN = playField[hoveredItem.row][hoveredItem.col];
+      playField[hoveredItem.row][hoveredItem.col] = 0;
+      playField[emptyCell.row][emptyCell.col] = currentN;
+      hoveredItem = null;
+
+      moves++;
+      movesBlock.innerHTML = `<h3>Moves: ${moves}<h3>`;
+
+      gameOver = checkWin();
+    }
+  }
+});
+
 function getHoveredItem(clientX, clientY) {
   return coords.find((c) => {
     return (
@@ -47,6 +110,20 @@ function stillOnHovered(clientX, clientY) {
     clientX < hoveredItem.x + CELL_SIZE &&
     clientY > hoveredItem.y &&
     clientY < hoveredItem.y + CELL_SIZE
+  );
+}
+
+function gameOverScreen() {
+  ctx.fillStyle = 'white';
+  (retryBtnCoords.x = (cvs.width - 150) / 2),
+    (retryBtnCoords.y = (cvs.height - 150) / 2);
+  ctx.fillRect(retryBtnCoords.x, retryBtnCoords.y, 150, 150);
+  ctx.drawImage(
+    loadedRetryIcon,
+    (cvs.width - 100) / 2,
+    (cvs.height - 90) / 2,
+    100,
+    90
   );
 }
 
