@@ -50,7 +50,7 @@ cvs.addEventListener('click', (e) => {
 
       playField = [];
       coords = [];
-      gameWinResult = [];
+      finalstate = [];
 
       initPlayField();
     }
@@ -84,13 +84,24 @@ cvs.addEventListener('click', (e) => {
       playField[emptyCell.row][emptyCell.col] = currentN;
       hoveredItem = null;
 
-      moves++;
-      movesBlock.innerHTML = `<h3>Moves: ${moves}<h3>`;
+      // moves++;
+      // movesBlock.innerHTML = `<h3>Moves: ${moves}<h3>`;
 
       gameOver = checkWin();
     }
   }
 });
+
+function checkWin() {
+  for (let row = 0; row < playField.length; row++) {
+    for (let col = 0; col < playField[row].length; col++) {
+      if (playField[row][col] !== finalstate[row][col]) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
 
 function getHoveredItem(clientX, clientY) {
   return coords.find((c) => {
