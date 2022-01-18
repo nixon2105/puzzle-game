@@ -1,19 +1,23 @@
 const cvs = document.getElementById('game');
 const ctx = cvs.getContext('2d');
+const moveAudio = new Audio('audio/move.mp3');
+const movesBlock = document.getElementById('moves');
+const timeBlock = document.getElementById('time');
 
-const COL_COUNT = 4;
-const CELL_SIZE = cvs.width / COL_COUNT;
+const CELL_COUNT = 4;
+const CELL_WIDTH = cvs.width / CELL_COUNT;
 
-let bgImage = null,
-  retryIcon = null,
-  moveAudio = null,
-  gameOver = false,
-  hoveredItem = null,
-  retryBtnCoords = {};
+const playField = [],
+  gameWinResult = [];
+const coords = [];
 
-let playField = [],
-  coords = [],
-  finalstate = [];
+let loadedBgImage = null,
+  loadedRetryIcon = null;
+let hoveredItem = null;
+let gameOver = false;
+let retryBtnCoords = {};
+let moves = 0,
+  time = 0;
 
 cvs.addEventListener('mousemove', (e) => {
   const clientX = e.offsetX;
@@ -50,14 +54,14 @@ cvs.addEventListener('click', (e) => {
 
       playField = [];
       coords = [];
-      finalstate = [];
+      gameWinResult = [];
 
       initPlayField();
     }
     return;
   }
 
-  moveAudio.play();
+  // moveAudio.play();
 
   if (stillOnHovered(clientX, clientY)) {
     const emptyCell =
@@ -92,24 +96,19 @@ cvs.addEventListener('click', (e) => {
   }
 });
 
-function checkWin() {
-  for (let row = 0; row < playField.length; row++) {
-    for (let col = 0; col < playField[row].length; col++) {
-      if (playField[row][col] !== finalstate[row][col]) {
-        return false;
-      }
-    }
-  }
-  return true;
+function formatSeconds(seconds) {
+  const date = new Date(1970, 0, 1);
+  date.setSeconds(seconds);
+  return date.toTimeString().replace(/.*(\d{2}:\d{2}:\d{2}).*/, '$1');
 }
 
 function getHoveredItem(clientX, clientY) {
   return coords.find((c) => {
     return (
       clientX > c.x &&
-      clientX < c.x + CELL_SIZE &&
+      clientX < c.x + CELL_WIDTH &&
       clientY > c.y &&
-      clientY < c.y + CELL_SIZE
+      clientY < c.y + CELL_WIDTH
     );
   });
 }
@@ -118,10 +117,62 @@ function stillOnHovered(clientX, clientY) {
   return (
     hoveredItem &&
     clientX > hoveredItem.x &&
-    clientX < hoveredItem.x + CELL_SIZE &&
+    clientX < hoveredItem.x + CELL_WIDTH &&
     clientY > hoveredItem.y &&
-    clientY < hoveredItem.y + CELL_SIZE
+    clientY < hoveredItem.y + CELL_WIDTH
   );
+}
+
+function drawBg(path = 'images/bg.png', dx = 0, dy = 0) {
+  if (loadedBgImage) {
+    ctx.drawImage(loadedBgImage, dx, dy);
+    return;
+  }
+  return new Promise((resolve) => {
+    const bgImage = new Image();
+    bgImage.src = path;
+    bgImage.onload = () => {
+      loadedBgImage = bgImage;
+      ctx.drawImage(bgImage, dx, dy);
+      resolve();
+    };
+  });
+}
+
+function loadImage(path) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.src = path;
+    img.onload = () => {
+      resolve(img);
+    };
+  });
+}
+
+function initPlayField() {
+  const existedNumbers = [];
+  let counter = 1;
+
+  for (let i = 0; i < CELL_COUNT; i++) {
+    const row = [],
+      winRow = [];
+    for (let j = 0; j < CELL_COUNT; j++) {
+      while (row.length !== CELL_COUNT) {
+        const n = Math.floor(Math.random() * 16);
+        if (!existedNumbers.includes(n)) {
+          existedNumbers.push(n);
+          row.push(n);
+        }
+      }
+      coords.push({ row: i, col: j, x: j * CELL_WIDTH, y: i * CELL_WIDTH });
+      winRow.push(counter);
+      counter++;
+    }
+    gameWinResult.push(winRow);
+    playField.push(row);
+  }
+
+  gameWinResult[gameWinResult.length - 1][CELL_COUNT - 1] = 0;
 }
 
 function gameOverScreen() {
@@ -138,76 +189,30 @@ function gameOverScreen() {
   );
 }
 
-function loadImages(path) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.src = path;
-    img.onload = () => {
-      resolve(img);
-    };
-    img.onerror = (e) => {
-      reject(e);
-    };
-  });
-}
-
-//load resourses (audio and images)
-async function loadResourses() {
-  const results = await Promise.all([
-    loadImages('images/bg.png'),
-    loadImages('images/retry.png'),
-  ]);
-  (bgImage = results[0]), (retryIcon = results[0]);
-  newAudio = new Audio('audio/move.mp3');
-}
-
-function initPlayField() {
-  const existedNumbers = [];
-  const results = [];
-  let counter = 1;
-
-  for (let i = 0; i < COL_COUNT; i++) {
-    const row = [],
-      finalstateRow = [];
-    for (let j = 0; j < COL_COUNT; j++) {
-      while (row.length !== COL_COUNT) {
-        const n = Math.floor(Math.random() * 16);
-        if (!existedNumbers.includes(n)) {
-          existedNumbers.push(n);
-          row.push(n);
-        }
+function checkWin() {
+  for (let row = 0; row < playField.length; row++) {
+    for (let col = 0; col < playField[row].length; col++) {
+      if (playField[row][col] !== gameWinResult[row][col]) {
+        return false;
       }
-      coords.push({ row: i, col: j, x: j * CELL_SIZE, y: i * CELL_SIZE });
-      finalstateRow.push(counter);
-      counter++;
     }
-
-    results.push(row);
-    finalstate.push(finalstateRow);
   }
-  finalstate[finalstate.length - 1][COL_COUNT - 1] = 0;
-  return results;
-}
-
-function drawImage(imgObj, x, y, w, h) {
-  if (w && h) {
-    ctx.drawImage(imgObj, x, y, w, h);
-  }
-  ctx.drawImage(imgObj, x, y);
+  return true;
 }
 
 function drawPlayField() {
   ctx.clearRect(0, 0, cvs.width, cvs.height);
-  if (bgImage) {
-    drawImage(bgImage, 0, 0);
+  if (loadedBgImage) {
+    drawBg();
   }
+  // console.log(gameOver)
   if (gameOver) {
-    // gameOverScreen();
+    gameOverScreen();
   } else {
     for (let row = 0; row < playField.length; row++) {
       for (let col = 0; col < playField[row].length; col++) {
-        const dx = col * CELL_SIZE;
-        const dy = row * CELL_SIZE;
+        const dx = col * CELL_WIDTH;
+        const dy = row * CELL_WIDTH;
 
         if (playField[row][col]) {
           ctx.beginPath();
@@ -218,7 +223,7 @@ function drawPlayField() {
             ctx.fillStyle = 'white';
           }
 
-          ctx.rect(dx, dy, CELL_SIZE, CELL_SIZE);
+          ctx.rect(dx, dy, CELL_WIDTH, CELL_WIDTH);
           ctx.fill();
 
           ctx.strokeStyle = 'black';
@@ -231,12 +236,12 @@ function drawPlayField() {
 
           const txt = playField[row][col];
           const measuredText = ctx.measureText(txt);
-          const offset = CELL_SIZE - measuredText.width;
+          const offset = CELL_WIDTH - measuredText.width;
 
           ctx.fillText(
             playField[row][col],
             dx + offset / 2,
-            dy + CELL_SIZE / 4
+            dy + CELL_WIDTH / 4
           );
         }
       }
@@ -245,10 +250,15 @@ function drawPlayField() {
   requestAnimationFrame(drawPlayField);
 }
 
-async function initGame() {
-  await loadResourses();
-  playField = initPlayField();
+async function drawBoard() {
+  await drawBg();
+  loadedRetryIcon = await loadImage('images/retry.png');
+  initPlayField();
   drawPlayField();
+
+  // setInterval(() => {
+  //   timeBlock.innerHTML = `<h3>Time: ${formatSeconds(++time)}</h3>`;
+  // }, 1000);
 }
 
-initGame();
+drawBoard();
