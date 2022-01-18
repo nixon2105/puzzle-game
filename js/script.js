@@ -6,7 +6,9 @@ const CELL_SIZE = cvs.width / COL_COUNT;
 
 let bgImage = null,
   retryIcon = null,
-  moveAudio = null;
+  moveAudio = null,
+  gameOver = false,
+  hoveredItem = null;
 
 let playField = [],
   coords = [],
@@ -63,12 +65,66 @@ function initPlayField() {
   return results;
 }
 
-function draw() {}
+function drawImage(imgObj, x, y, w, h) {
+  if (w && h) {
+    ctx.drawImage(imgObj, x, y, w, h);
+  }
+  ctx.drawImage(imgObj, x, y);
+}
+
+function drawPlayField() {
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+  if (bgImage) {
+    drawImage(bgImage, 0, 0);
+  }
+  if (gameOver) {
+    // gameOverScreen();
+  } else {
+    for (let row = 0; row < playField.length; row++) {
+      for (let col = 0; col < playField[row].length; col++) {
+        const dx = col * CELL_SIZE;
+        const dy = row * CELL_SIZE;
+
+        if (playField[row][col]) {
+          ctx.beginPath();
+
+          if (hoveredItem && hoveredItem.x === dx && hoveredItem.y === dy) {
+            ctx.fillStyle = 'yellow';
+          } else {
+            ctx.fillStyle = 'white';
+          }
+
+          ctx.rect(dx, dy, CELL_SIZE, CELL_SIZE);
+          ctx.fill();
+
+          ctx.strokeStyle = 'black';
+          ctx.stroke();
+
+          ctx.font = '50px monospace';
+          ctx.fillStyle = 'black';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+
+          const txt = playField[row][col];
+          const measuredText = ctx.measureText(txt);
+          const offset = CELL_SIZE - measuredText.width;
+
+          ctx.fillText(
+            playField[row][col],
+            dx + offset / 2,
+            dy + CELL_SIZE / 4
+          );
+        }
+      }
+    }
+  }
+  requestAnimationFrame(drawPlayField);
+}
 
 async function initGame() {
   await loadResourses();
   playField = initPlayField();
-  console.log(playField, coords, finalstate);
+  drawPlayField();
 }
 
 initGame();
