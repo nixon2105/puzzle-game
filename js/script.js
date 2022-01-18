@@ -8,7 +8,9 @@ let bgImage = null,
   retryIcon = null,
   moveAudio = null;
 
-let playField = [];
+let playField = [],
+  coords = [],
+  finalstate = [];
 
 function loadImages(path) {
   return new Promise((resolve, reject) => {
@@ -33,31 +35,14 @@ async function loadResourses() {
   newAudio = new Audio('audio/move.mp3');
 }
 
-// function initPlayField() {
-//   const existedNumbers = [],
-//     result = [];
-//   for (let row = 0; row < COL_COUNT; row++) {
-//     const row = [];
-//     for (let col = 0; col < COL_COUNT; col++) {
-//       while (row.length !== COL_COUNT) {
-//         const randomN = Math.floor(Math.random() * COL_COUNT ** 2);
-//         if (existed.includes(randomN)) {
-//           row.push(randomN);
-//         }
-//       }
-//     }
-//     result.push(row);
-//   }
-//   return result;
-// }
-
 function initPlayField() {
   const existedNumbers = [];
   const results = [];
+  let counter = 1;
 
   for (let i = 0; i < COL_COUNT; i++) {
     const row = [],
-      winRow = [];
+      finalstateRow = [];
     for (let j = 0; j < COL_COUNT; j++) {
       while (row.length !== COL_COUNT) {
         const n = Math.floor(Math.random() * 16);
@@ -66,18 +51,24 @@ function initPlayField() {
           row.push(n);
         }
       }
+      coords.push({ row: i, col: j, x: j * CELL_SIZE, y: i * CELL_SIZE });
+      finalstateRow.push(counter);
+      counter++;
     }
 
     results.push(row);
+    finalstate.push(finalstateRow);
   }
-
+  finalstate[finalstate.length - 1][COL_COUNT - 1] = 0;
   return results;
 }
+
+function draw() {}
 
 async function initGame() {
   await loadResourses();
   playField = initPlayField();
-  console.log(playField);
+  console.log(playField, coords, finalstate);
 }
 
 initGame();
